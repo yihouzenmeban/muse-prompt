@@ -18,7 +18,7 @@ Schema (example values are fictional):
   "plan": [{"date": "5/13", "sub": "周三 · 今天", "title": "恢复跑 <b>9.60</b> km",
             "detail": "...", "race": false}],
   "stats": [{"v": "7h01", "unit": "m", "l": "昨晚睡眠 · 85 分"} x4],
-  "hrv": {"label": "夜间 HRV · 近 7 晚", "value": "79", "unit": "ms",
+  "hrv": {"label": "夜间 HRV · 昨晚", "value": "79", "unit": "ms",
           "values": [72, 75, 71, 78, 74, 76, 79],
           "statuses": ["BALANCED", ...], "band": [64, 92],
           "low_upper": 58, "dates": ["5/7", ..., "5/13"]},
@@ -48,7 +48,7 @@ html[data-theme="dark"] .tb{--acc:#ff7a45;}
 .tb-rule{border:none;border-top:1px solid var(--hatch-widget-border);margin:7px 0;}
 .tb-rule.flush-t{margin-top:0;}
 .tb-rule.flush-b{margin-bottom:0;}
-.tb-verdict{font-size:15px;line-height:1.65;margin-top:12px;}
+.tb-verdict{font-size:15px;line-height:1.65;margin-top:12px;text-align:justify;}
 .tb-verdict b{font-weight:700;}
 .tb-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 .cell .v{font-size:17px;font-weight:700;line-height:1.25;}
@@ -62,10 +62,12 @@ html[data-theme="dark"] .tb{--acc:#ff7a45;}
 .sleep-legend i.lg-hr{width:14px;height:2px;border-radius:1px;background:#e53935;display:inline-block;}
 .tb-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:15px;}
 .tb-grid>div{display:flex;flex-direction:column;}
-.cell-top{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
-.tb-ch{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+.cell-fill{flex:1;}
+.cell-desc{margin-top:7px;}
+.hrv-sub{font-size:10.5px;color:var(--hatch-widget-muted);margin-top:5px;}
+.tb-ch{display:flex;align-items:baseline;gap:8px;}
 .tb-ch .lb{font-size:12px;font-weight:600;color:var(--hatch-widget-muted);white-space:nowrap;}
-.tb-ch .val{font-size:19px;font-weight:800;white-space:nowrap;}
+.tb-ch .val{font-size:13px;font-weight:700;white-space:nowrap;}
 .tb-ch .val small{font-size:11px;font-weight:500;color:var(--hatch-widget-muted);}
 .tb-days{display:flex;gap:4px;margin-top:4px;}
 .tb-days em{flex:1;text-align:center;font-style:normal;font-size:10px;color:var(--hatch-widget-muted);}
@@ -84,7 +86,7 @@ svg text{font-family:inherit;}
 .rw .t1{font-size:13.5px;font-weight:600;line-height:20px;}
 .rw .t1 b{font-weight:800;}
 .rw .t2{font-size:12.5px;color:var(--hatch-widget-muted);line-height:17px;}
-.tb-foot{font-size:12.5px;color:var(--hatch-widget-muted);line-height:1.6;padding-top:11px;}
+.tb-foot{font-size:12.5px;color:var(--hatch-widget-muted);line-height:1.6;padding-top:11px;text-align:justify;}
 """
 
 
@@ -284,12 +286,13 @@ def render(d):
     # charts side by side, equal height: HRV trend + last night's sleep stages
     h, sc = d["hrv"], d["sleep_chart"]
     p.append('<hr class="tb-rule"><div class="tb-grid">')
-    p.append(f'<div><div class="cell-top"><div class="tb-ch"><span class="lb">{h["label"]}</span><span class="val">{h["value"]} <small>{h["unit"]}</small></span></div></div>'
-             f'{hrv_svg(h)}'
-             f'<div class="tb-times"><span>{h["dates"][0]}</span><span>{h["dates"][-1]}</span></div></div>')
-    p.append(f'<div><div class="cell-top">{sleep_legend(sc)}</div>'
-             f'{sleep_svg(sc)}'
-             f'<div class="tb-times"><span>{sc["start"]}</span><span>{sc["end"]}</span></div></div>')
+    p.append(f'<div>{sleep_svg(sc)}'
+             f'<div class="tb-times"><span>{sc["start"]}</span><span>{sc["end"]}</span></div>'
+             f'<div class="cell-fill"></div><div class="cell-desc">{sleep_legend(sc)}</div></div>')
+    p.append(f'<div>{hrv_svg(h)}'
+             f'<div class="tb-times"><span>{h["dates"][0]}</span><span>{h["dates"][-1]}</span></div>'
+             f'<div class="cell-fill"></div><div class="cell-desc"><div class="tb-ch"><span class="lb">{h["label"]}</span><span class="val">{h["value"]} <small>{h["unit"]}</small></span></div>'
+             f'<div class="hrv-sub">近 7 晚 {min(h["values"])}–{max(h["values"])} · 基准带 {h["band"][0]}–{h["band"][1]}</div></div></div>')
     p.append("</div>")
     if d.get("weather"):
         p.append(f'<hr class="tb-rule"><div class="tb-foot">{d["weather"]}</div>')

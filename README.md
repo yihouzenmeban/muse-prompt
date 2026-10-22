@@ -18,15 +18,15 @@
 2. 按「占位符清单」把 `{{...}}` 全部换成你自己的值。
 3. 把「Prompt 正文」粘贴为 Muse 定时任务的正文，设好调度时间。
 
-## 配套脚本现状
+## 配套脚本
 
-模板只含 prompt 本身；它依赖的脚本没有随仓库发布，需要自备（或让你的 Muse 照模板里的规范现写）：
+两个功能依赖的脚本都在 [scripts/](scripts/) 目录里（已脱敏，配置项改为环境变量或示例值），明细和搭建要点见 [scripts/README.md](scripts/README.md)：
 
-- 健康/运动数据拉取脚本（Garmin 接入方式可参考 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros)，但该项目不含睡眠/HRV 拉取）
-- 天气查询脚本（和风天气或其他天气源）
-- 播报渲染脚本（结构化 JSON → 图片，可选）
-- intervals.icu 课表写入脚本（可选）
-- 备份同步脚本 `sync.sh`（自动备份功能的核心，模板里列了它必须实现的要点）
+- [pull.py](scripts/pull.py) — Garmin 活动与健康数据拉取（依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 的账号配置与 garth 后端）
+- [qw.py](scripts/qw.py) — 和风天气查询
+- [render_brief.py](scripts/render_brief.py) + [export_brief.py](scripts/export_brief.py) + [export_shot.js](scripts/export_shot.js) — 播报 JSON 渲染成图片
+- [push_workout.py](scripts/push_workout.py) — intervals.icu 课表写入
+- [sync.sh](scripts/sync.sh) — 资源库备份同步（自动备份功能的核心）
 
 ## 同步方式（本仓库维护）
 

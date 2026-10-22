@@ -8,7 +8,7 @@
 
 1. **一个私有 git 仓库**作为备份目标（只放备份，别作他用）。
 2. **一把可推送的 SSH key**（账号级 key 或该仓库的 deploy key 均可），路径填入占位符。
-3. **同步脚本**（如 `~/workspace/muse-backup/sync.sh`），要点：
+3. **同步脚本**（如 `~/workspace/muse-backup/sync.sh`）：本仓库的 [scripts/sync.sh](scripts/sync.sh) 是可直接改用的实现——把仓库地址、key 路径和排除清单换成你的即可。它必须做到：
    - 用 rsync 把家目录同步到备份仓库的本地工作区（工作区即仓库克隆，镜像家目录结构）。
    - **排除三类，缺一不可**：
      - 密钥类：SSH 私钥目录、各类凭据/ token 文件（如 ngrok 配置、各项目的 config.local.json 与 token 文件、API key 文件、所有 `.env`）。把你机器上所有含密钥的文件逐个列进排除名单——漏一个就是泄密。

@@ -4,6 +4,12 @@
 
 这是从实际在用的版本脱敏泛化而来的：`{{双大括号}}` 是需要你替换的占位符，其余方法论（恢复评估口径、天气动态调换、确认后才写入、失败处理）可以直接照用。
 
+## 效果示例
+
+下图是用虚构数据（[examples/brief-example.json](examples/brief-example.json)）经本仓库脚本渲染的播报图，版式与实际投递一致：
+
+![每晚训练播报示例](examples/training-brief.png)
+
 ## 搭建前置
 
 1. **数据源脚本**：一个能只读拉取运动与健康数据的脚本（本模板以 Garmin 为例，需要活动、睡眠、静息心率、夜间 HRV、Body Battery、日间压力）。本仓库的 [scripts/pull.py](scripts/pull.py) 就是这样一个实现可直接用：它依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 项目的账号配置（Garmin Personal API key）与 garth 后端——Personal API 拉活动/健康数据，分圈与睡眠阶段时间线这两样 Personal API 没有的走 garth。换成其他数据源（COROS、Apple Health 等）时，只需替换这个脚本并改第 2 步的字段口径。

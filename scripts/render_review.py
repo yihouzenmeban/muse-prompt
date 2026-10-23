@@ -50,11 +50,11 @@ CSS = """
 .prr-take{border-top:1px solid var(--hatch-widget-border);margin-top:12px;padding-top:9px;text-align:justify}
 .prr-vs{margin-top:12px}
 .prr-vs .row{display:flex;align-items:center;gap:10px;margin-top:7px}
-.prr-vs .lab{flex:none;width:98px;font-size:12px;color:var(--hatch-widget-muted)}
+.prr-vs .lab{flex:none;width:var(--labw,98px);font-size:12px;color:var(--hatch-widget-muted);white-space:nowrap}
 .prr-vs .track{position:relative;flex:1;height:14px;background:var(--hatch-widget-surface-muted);border-radius:4px}
 .prr-vs .band{position:absolute;top:0;bottom:0;background:var(--hatch-widget-accent);opacity:.30;border-radius:4px}
 .prr-vs .mark{position:absolute;top:-2px;bottom:-2px;width:3px;margin-left:-1px;background:var(--hatch-widget-text);border-radius:2px}
-.prr-vs .val{flex:none;width:88px;font-size:12.5px;font-variant-numeric:tabular-nums;line-height:1.3}
+.prr-vs .val{flex:none;width:var(--valw,56px);font-size:12.5px;font-variant-numeric:tabular-nums;line-height:1.3;text-align:right;white-space:nowrap}
 .prr-vs .val .d{display:block;font-size:10.5px;color:var(--hatch-widget-muted)}
 .prr-vs .cap{font-size:11px;color:var(--hatch-widget-muted);margin-top:6px}
 .prr-rec{display:flex;gap:12px;margin-top:12px}
@@ -134,7 +134,7 @@ def chart_svg(chart, distance_km=None, target_pace=None):
     if len(hr_vals) < 2 and len(pace_vals) < 2 and len(speed_vals) < 2:
         return ""
     W, H = 520, 126
-    L, R, T, B = 30, 40, 8, 16  # plot box insets; axis labels live outside
+    L, R, T, B = 22, 26, 8, 16  # insets sized to the tick labels so they hug both content edges
     x0, x1, y0, y1 = L, W - R, T, H - B
     parts = [f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" style="display:block">']
 
@@ -264,7 +264,33 @@ def vs_bars_html(rows):
     def X(p):
         return (hi - p) / (hi - lo) * 100
 
-    out = ['<div class="prr-vs">']
+    def delta_of(r):
+        actual = r.get("actual")
+        t = r.get("target") or {}
+        if actual is None:
+            return ""
+        if t.get("lo") is not None and t.get("hi") is not None:
+            if actual < t["lo"]:
+                return f'快 {round((t["lo"] - actual) * 60)} 秒'
+            if actual > t["hi"]:
+                return f'慢 {round((actual - t["hi"]) * 60)} 秒'
+            return "带内"
+        return "计划外"
+
+    def est_w(s, cjk_px, asc_px):
+        return sum(cjk_px if ord(c) > 0x2E7F else asc_px for c in s)
+
+    # Uniform label/value columns sized to the widest row, so every track
+    # shares the same left and right edge (ragged tracks look broken).
+    labw = max([est_w(str(r.get("label", "")), 12.2, 6.8) for r in rows] + [40]) + 3
+    valw = 44
+    for r in rows:
+        if r.get("actual") is not None:
+            valw = max(valw, est_w(fmt_pace(r["actual"]), 12.5, 7.4),
+                       est_w(delta_of(r), 10.6, 6.1))
+    valw += 3
+
+    out = [f'<div class="prr-vs" style="--labw:{labw:.0f}px;--valw:{valw:.0f}px">']
     for r in rows:
         actual = r.get("actual")
         t = r.get("target") or {}
@@ -274,18 +300,9 @@ def vs_bars_html(rows):
             width = X(t["lo"]) - X(t["hi"])
             band = f'<div class="band" style="left:{left:.1f}%;width:{width:.1f}%"></div>'
         mark = ""
-        delta = ""
+        delta = delta_of(r)
         if actual is not None:
             mark = f'<div class="mark" style="left:{X(actual):.1f}%"></div>'
-            if t.get("lo") is not None and t.get("hi") is not None:
-                if actual < t["lo"]:
-                    delta = f'快 {round((t["lo"] - actual) * 60)} 秒'
-                elif actual > t["hi"]:
-                    delta = f'慢 {round((actual - t["hi"]) * 60)} 秒'
-                else:
-                    delta = "带内"
-            else:
-                delta = "计划外"
         val = ""
         if actual is not None:
             val = (f'<div class="val"><b>{fmt_pace(actual)}</b>'

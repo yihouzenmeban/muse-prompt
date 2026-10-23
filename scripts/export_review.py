@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Export a post-run review card as a dark-mode PNG.
 
-Shares the nightly brief's image pipeline (same dark theme variables and
-background #161615, same 600 CSS px width at 3x, same CDP screenshot tool
-— the export_shot.js sitting next to this file — same blank-tail crop,
-except the bottom inset mirrors the measured top inset so padding reads
-uniform). The review fragment's own margin/max-width are neutralized so
-padding is uniform: 10px wrapper gutter + the card's own 14/16px padding,
-nothing else.
+Shares the nightly brief's image pipeline (same dark theme variables —
+the slate-blue palette below — same 600 CSS px width at 3x, same CDP
+screenshot tool — the export_shot.js sitting next to this file — same
+blank-tail crop, except the bottom inset mirrors the measured top inset
+so padding reads uniform). The review fragment's own margin/max-width
+are neutralized so padding is uniform: 10px wrapper gutter + the card's
+own 14/16px padding, nothing else.
 
 Usage: export_review.py [review_json] [out_png]
 Default json: last_review.json next to this script.
-Default out:  review-card-<today>-dark.png next to it.
+Default out:  review-card-<activity date or today>-dark.png next to it.
 """
 import subprocess
 import sys
@@ -28,19 +28,19 @@ WRAPPER = HERE / "export" / "review-export-dark.html"
 
 DARK_WRAPPER = """<!DOCTYPE html><html data-theme="dark"><head><meta charset="utf-8"><style>
 :root{
-  --hatch-widget-text:#ecece8;
-  --hatch-widget-muted:#9c9c96;
-  --hatch-widget-border:#373732;
-  --hatch-widget-surface-muted:#2a2a27;
-  --hatch-widget-surface:#1d1d1b;
-  --hatch-widget-bg:#161615;
-  --hatch-widget-accent:#FF7A45;
-  --hatch-widget-on-accent:#161615;
-  --hatch-widget-focus:#FF7A45;
+  --hatch-widget-text:#e8edf3;
+  --hatch-widget-muted:#98a4b3;
+  --hatch-widget-border:#303a47;
+  --hatch-widget-surface-muted:#232b36;
+  --hatch-widget-surface:#1a2029;
+  --hatch-widget-bg:#11151b;
+  --hatch-widget-accent:#4da3ff;
+  --hatch-widget-on-accent:#0d1117;
+  --hatch-widget-focus:#4da3ff;
   --hatch-widget-shadow:none;
 }
 *{box-sizing:border-box;}
-body{margin:0;background:#161615;font-family:"PingFang SC","Noto Sans CJK SC","Source Han Sans SC",sans-serif;}
+body{margin:0;background:#11151b;font-family:"PingFang SC","Noto Sans CJK SC","Source Han Sans SC",sans-serif;}
 .wrap{width:600px;padding:10px;}
 .prr{margin:0 !important;max-width:none !important;}
 </style></head><body><div class="wrap">%s</div></body></html>"""

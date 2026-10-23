@@ -3,23 +3,28 @@
 
 Usage: render_review.py <review.json>  ->  HTML fragment on stdout.
 
-Companion to post-run-review.md in this repo: the review JSON field spec
-lives there. Layout: compact and visual first. One timeline chart
-(pace line + HR line + elevation wash, from detail.stream) carries the
-shape of the run; the numbers collapse into two inline lines; the HR
-zone bar stays; segment rows appear only for structured workouts and
-races (show_structure). Text is kept to the lead, two short paragraphs
-and one takeaway. Colour lives in the chart and the zone bar only.
+Layout: compact and
+visual first. One timeline chart (pace line + HR line + elevation wash,
+from detail.stream) carries the shape of the run; the numbers collapse
+into two inline lines; the HR zone bar stays; segment rows appear only
+for structured workouts and races (show_structure). Ordinary sessions
+(A-layout): prose is the lead plus one takeaway only — execution goes
+to vs_bars (per-segment target band vs actual tick) and the morning
+state to recovery (four mini gauges); when either field is present,
+comments and the text morning line are not rendered. Races keep
+comments + structure. In the dark export, blue (#4da3ff, the Z1 colour)
+carries every target/reference mark and red is HR only.
 Every field is optional except title.
 """
 import json
+import math
 import sys
 
 ZONE_COLORS = {
     "below": "#8fa3bf", "z1": "#4da3ff", "z2": "#34c77b",
     "z3": "#f2c037", "z4": "#f08c3c", "z5": "#e5534b",
 }
-HR_COLOR = "#d64541"
+HR_COLOR = "#e5534b"
 
 CSS = """
 <style>
@@ -43,6 +48,27 @@ CSS = """
 .prr-body p{margin:6px 0;text-align:justify}
 .prr-morn{font-size:12px;color:var(--hatch-widget-muted);margin-top:10px}
 .prr-take{border-top:1px solid var(--hatch-widget-border);margin-top:12px;padding-top:9px;text-align:justify}
+.prr-vs{margin-top:12px}
+.prr-vs .row{display:flex;align-items:center;gap:10px;margin-top:7px}
+.prr-vs .lab{flex:none;width:98px;font-size:12px;color:var(--hatch-widget-muted)}
+.prr-vs .track{position:relative;flex:1;height:14px;background:var(--hatch-widget-surface-muted);border-radius:4px}
+.prr-vs .band{position:absolute;top:0;bottom:0;background:var(--hatch-widget-accent);opacity:.30;border-radius:4px}
+.prr-vs .mark{position:absolute;top:-2px;bottom:-2px;width:3px;margin-left:-1px;background:var(--hatch-widget-text);border-radius:2px}
+.prr-vs .val{flex:none;width:88px;font-size:12.5px;font-variant-numeric:tabular-nums;line-height:1.3}
+.prr-vs .val .d{display:block;font-size:10.5px;color:var(--hatch-widget-muted)}
+.prr-vs .cap{font-size:11px;color:var(--hatch-widget-muted);margin-top:6px}
+.prr-rec{display:flex;gap:12px;margin-top:12px}
+.prr-rec .cell{flex:1;min-width:0}
+.prr-rec .lab{font-size:11px;color:var(--hatch-widget-muted)}
+.prr-rec .vis{position:relative;height:8px;background:var(--hatch-widget-surface-muted);border-radius:4px;margin-top:6px}
+.prr-rec .fill{position:absolute;left:0;top:0;bottom:0;background:var(--hatch-widget-text);border-radius:4px}
+.prr-rec .filldim{position:absolute;top:0;bottom:0;background:var(--hatch-widget-text);opacity:.35}
+.prr-rec .band{position:absolute;top:0;bottom:0;background:var(--hatch-widget-accent);opacity:.32;border-radius:4px}
+.prr-rec .dot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;background:var(--hatch-widget-text);border:2px solid var(--hatch-widget-bg);transform:translate(-50%,-50%)}
+.prr-rec .tick{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--hatch-widget-muted)}
+.prr-rec .val{font-size:12px;margin-top:6px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.prr-rec .val b{font-weight:650}
+.prr-rec .val .m{color:var(--hatch-widget-muted);font-size:11px}
 </style>
 """
 
@@ -207,6 +233,139 @@ def nums_line(pairs):
     return '<div class="prr-nums">' + ' · '.join(segs) + '</div>'
 
 
+def vs_bars_html(rows):
+    """Execution comparison bars: one row per workout segment.
+
+    Shared pace scale (fast at right, snapped to 15s steps like the chart).
+    The target band is a tinted span on the track, the actual pace a tick;
+    the value column carries the pace plus a plain delta vs the nearest
+    band edge (带内 / 快 N 秒 / 慢 N 秒). Rows without a target show the
+    tick on a plain track with delta 计划外.
+    """
+    vals = []
+    for r in rows:
+        if r.get("actual") is not None:
+            vals.append(r["actual"])
+        t = r.get("target") or {}
+        if t.get("lo") is not None:
+            vals.append(t["lo"])
+        if t.get("hi") is not None:
+            vals.append(t["hi"])
+    if not vals:
+        return ""
+    lo, hi = min(vals), max(vals)
+    pad = max(0.25, (hi - lo) * 0.18)
+    lo = math.floor((lo - pad) * 4) / 4
+    hi = math.ceil((hi + pad) * 4) / 4
+    if hi - lo < 1.0:
+        mid = (lo + hi) / 2
+        lo, hi = mid - 0.5, mid + 0.5
+
+    def X(p):
+        return (hi - p) / (hi - lo) * 100
+
+    out = ['<div class="prr-vs">']
+    for r in rows:
+        actual = r.get("actual")
+        t = r.get("target") or {}
+        band = ""
+        if t.get("lo") is not None and t.get("hi") is not None:
+            left = X(t["hi"])
+            width = X(t["lo"]) - X(t["hi"])
+            band = f'<div class="band" style="left:{left:.1f}%;width:{width:.1f}%"></div>'
+        mark = ""
+        delta = ""
+        if actual is not None:
+            mark = f'<div class="mark" style="left:{X(actual):.1f}%"></div>'
+            if t.get("lo") is not None and t.get("hi") is not None:
+                if actual < t["lo"]:
+                    delta = f'快 {round((t["lo"] - actual) * 60)} 秒'
+                elif actual > t["hi"]:
+                    delta = f'慢 {round((actual - t["hi"]) * 60)} 秒'
+                else:
+                    delta = "带内"
+            else:
+                delta = "计划外"
+        val = ""
+        if actual is not None:
+            val = (f'<div class="val"><b>{fmt_pace(actual)}</b>'
+                   f'<span class="d">{delta}</span></div>')
+        out.append(f'<div class="row"><div class="lab">{esc(r.get("label", ""))}</div>'
+                   f'<div class="track">{band}{mark}</div>{val}</div>')
+    out.append('<div class="cap">色带 = 课表目标 · 竖线 = 实际配速（右 = 更快）</div></div>')
+    return "".join(out)
+
+
+_HRV_STATUS_CN = {"BALANCED": "平衡", "LOW": "偏低", "UNBALANCED": "不平衡", "POOR": "差"}
+
+
+def recovery_html(rec):
+    """Morning recovery strip: up to four mini gauges in one row.
+
+    sleep: 0-100 fill bar. hrv: dot on the Garmin balanced band.
+    bb: wake level bar with this session's drain as a dim segment.
+    rhr: dot vs the 7-day average tick. Missing cells are skipped.
+    """
+    cells = []
+    if rec.get("sleep_score") is not None:
+        s = rec["sleep_score"]
+        cells.append(
+            '<div class="cell"><div class="lab">睡眠</div>'
+            f'<div class="vis"><div class="fill" style="width:{s:.0f}%"></div></div>'
+            f'<div class="val"><b>{s}</b> <span class="m">分</span></div></div>')
+    hv = rec.get("hrv") or {}
+    if hv.get("value") is not None and hv.get("base_lo") is not None and hv.get("base_hi") is not None:
+        v, blo, bhi = hv["value"], hv["base_lo"], hv["base_hi"]
+        lo = math.floor(blo * 0.72 / 5) * 5
+        hi = math.ceil(bhi * 1.28 / 5) * 5
+
+        def HX(x):
+            return (x - lo) / (hi - lo) * 100
+
+        st = _HRV_STATUS_CN.get(str(hv.get("status", "")).upper(), hv.get("status") or "")
+        st_html = f' <span class="m">{esc(st)}</span>' if st else ""
+        cells.append(
+            '<div class="cell"><div class="lab">HRV · 基准带</div>'
+            f'<div class="vis"><div class="band" style="left:{HX(blo):.1f}%;width:{HX(bhi) - HX(blo):.1f}%"></div>'
+            f'<div class="dot" style="left:{HX(v):.1f}%"></div></div>'
+            f'<div class="val"><b>{v}</b> <span class="m">ms</span>{st_html}</div></div>')
+    bb = rec.get("bb") or {}
+    if bb.get("wake") is not None:
+        wake = bb["wake"]
+        drain = bb.get("drain")
+        dim = ""
+        fill_to = wake
+        val = f'<b>{wake}</b> <span class="m">晨起</span>'
+        if drain is not None:
+            after = wake + drain
+            fill_to = after
+            dim = (f'<div class="filldim" style="left:{after:.0f}%;width:{-drain:.0f}%"></div>')
+            val = f'<b>{wake} → {after}</b> <span class="m">本课 {drain}</span>'
+        cells.append(
+            '<div class="cell"><div class="lab">体电</div>'
+            f'<div class="vis"><div class="fill" style="width:{fill_to:.0f}%"></div>{dim}</div>'
+            f'<div class="val">{val}</div></div>')
+    rh = rec.get("rhr") or {}
+    if rh.get("value") is not None:
+        v = rh["value"]
+        avg = rh.get("avg7")
+        lo = min(v, avg if avg is not None else v) - 6
+        hi = max(v, avg if avg is not None else v) + 6
+
+        def RX(x):
+            return (x - lo) / (hi - lo) * 100
+
+        tick = f'<div class="tick" style="left:{RX(avg):.1f}%"></div>' if avg is not None else ""
+        avg_html = f' <span class="m">7日 {avg}</span>' if avg is not None else ""
+        cells.append(
+            '<div class="cell"><div class="lab">静息心率</div>'
+            f'<div class="vis">{tick}<div class="dot" style="left:{RX(v):.1f}%"></div></div>'
+            f'<div class="val"><b>{v}</b>{avg_html}</div></div>')
+    if not cells:
+        return ""
+    return '<div class="prr-rec">' + "".join(cells) + '</div>'
+
+
 def render(d):
     h = ['<div class="prr">', CSS]
     h.append(f'<div class="prr-title">{esc(d.get("title", "跑步点评"))}</div>')
@@ -277,6 +436,12 @@ def render(d):
             h.append(f'<span><i style="background:{ZONE_COLORS.get(z.get("key", ""), "#999")}"></i>{esc(z.get("label", ""))} {pct}%</span>')
         h.append('</div>')
 
+    vs_bars = d.get("vs_bars") or []
+    if vs_bars:
+        block = vs_bars_html(vs_bars)
+        if block:
+            h.append(block)
+
     structure = d.get("structure") or []
     if structure and d.get("show_structure"):
         h.append('<div class="prr-seg">')
@@ -296,8 +461,12 @@ def render(d):
                      f'<div>{" · ".join(bits)}</div></div>')
         h.append('</div>')
 
+    # A-layout (visual-first): when the comparison bars or the recovery
+    # strip carry the story, prose comments and the text morning line are
+    # not rendered — the text budget is lead + takeaway only.
+    visual_first = bool(vs_bars or d.get("recovery"))
     comments = d.get("comments") or []
-    if comments:
+    if comments and not visual_first:
         h.append('<div class="prr-body">')
         for c in comments:
             text = c.get("t") if isinstance(c, dict) else str(c)
@@ -305,8 +474,14 @@ def render(d):
                 h.append(f'<p>{esc(text)}</p>')
         h.append('</div>')
 
+    recovery = d.get("recovery") or {}
+    if recovery:
+        block = recovery_html(recovery)
+        if block:
+            h.append(block)
+
     morning = d.get("morning") or {}
-    if morning:
+    if morning and not recovery:
         items = []
         if morning.get("sleep_score") is not None:
             items.append(f'睡眠 {morning["sleep_score"]} 分')

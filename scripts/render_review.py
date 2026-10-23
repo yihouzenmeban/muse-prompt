@@ -359,7 +359,7 @@ def recovery_html(rec):
             dim = (f'<div class="filldim" style="left:{after:.0f}%;width:{-drain:.0f}%"></div>')
             val = f'<b>{wake} → {after}</b> <span class="m">本课 {drain}</span>'
         cells.append(
-            '<div class="cell"><div class="lab">体电</div>'
+            '<div class="cell"><div class="lab">身体电量</div>'
             f'<div class="vis"><div class="fill" style="width:{fill_to:.0f}%"></div>{dim}</div>'
             f'<div class="val">{val}</div></div>')
     rh = rec.get("rhr") or {}
@@ -421,11 +421,11 @@ def render(d):
         if dyn.get("stride_m") is not None:
             pairs.append(("步幅", f'{dyn["stride_m"]} m'))
         if dyn.get("vertical_cm") is not None:
-            pairs.append(("振幅", f'{dyn["vertical_cm"]} cm'))
+            pairs.append(("垂直振幅", f'{dyn["vertical_cm"]} cm'))
         if dyn.get("vertical_ratio") is not None:
             pairs.append(("垂直比", f'{dyn["vertical_ratio"]}%'))
         if dyn.get("gct_ms") is not None:
-            pairs.append(("触地", f'{dyn["gct_ms"]} ms'))
+            pairs.append(("触地时间", f'{dyn["gct_ms"]} ms'))
         line = nums_line(pairs)
         if line:
             h.append(line)
@@ -506,7 +506,7 @@ def render(d):
             st = f'（{esc(morning["hrv_status"])}）' if morning.get("hrv_status") else ""
             items.append(f'HRV {morning["hrv"]} ms{st}')
         if morning.get("bb_wake") is not None:
-            items.append(f'体电 {morning["bb_wake"]}')
+            items.append(f'身体电量 {morning["bb_wake"]}')
         if morning.get("rhr") is not None:
             items.append(f'静息心率 {morning["rhr"]}')
         if items:

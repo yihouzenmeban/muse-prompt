@@ -1,6 +1,6 @@
 # muse-prompt
 
-两个 Muse 定时任务的 **prompt 模板**，供参考搭建同款功能。模板从实际在用的版本脱敏泛化而来：具体赛事、个人数据、文件路径等都换成了 `{{占位符}}`，保留的是方法论本身——数据口径、判断规则、安全边界和失败处理。复制文件、替换占位符、填进你自己的定时任务即可。
+三个 Muse 自动化任务的 **prompt 模板**，供参考搭建同款功能。模板从实际在用的版本脱敏泛化而来：具体赛事、个人数据、文件路径等都换成了 `{{占位符}}`，保留的是方法论本身——数据口径、判断规则、安全边界和失败处理。复制文件、替换占位符、填进你自己的任务即可。
 
 ## 内容
 
@@ -12,6 +12,10 @@
 
 定时把 Muse 家目录镜像同步到一个 GitHub 私有仓库：密钥类文件严格排除、commit 前做密钥特征扫描、成功静默、失败走统一失败队列协议。文件内含同步脚本必须实现的要点（三类排除清单 + 密钥扫描）和占位符清单。
 
+### [post-run-review.md](post-run-review.md) — 跑后点评
+
+事件驱动（不是定时任务）：活动平台 webhook 入队信号 → 60 秒轻量检测唤醒点评 worker → 对照课表与心率区写结构化点评 JSON → 渲染成图主导的点评卡投递。文件内含信号链设计、点评口径与文案禁令、点评 JSON 字段规范，以及卡片版式与投递兜底规范（后台投递发不出 HTML 卡片时改发共用管线的夜间图片版，绝不退回纯文字）。
+
 ## 使用方式
 
 1. 打开模板文件，先看「搭建前置」备齐依赖（脚本、账号、仓库）。
@@ -20,11 +24,12 @@
 
 ## 配套脚本
 
-两个功能依赖的脚本都在 [scripts/](scripts/) 目录里（已脱敏，配置项改为环境变量或示例值），明细和搭建要点见 [scripts/README.md](scripts/README.md)：
+三个功能依赖的脚本都在 [scripts/](scripts/) 目录里（已脱敏，配置项改为环境变量或示例值），明细和搭建要点见 [scripts/README.md](scripts/README.md)：
 
 - [pull.py](scripts/pull.py) — Garmin 活动与健康数据拉取（依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 的账号配置与 garth 后端）
 - [qw.py](scripts/qw.py) — 和风天气查询
 - [render_brief.py](scripts/render_brief.py) + [export_brief.py](scripts/export_brief.py) + [export_shot.js](scripts/export_shot.js) — 播报 JSON 渲染成图片
+- [render_review.py](scripts/render_review.py) + [export_review.py](scripts/export_review.py) — 点评 JSON 渲染成点评卡 / 夜间模式图片（与播报共用 export_shot.js）
 - [push_workout.py](scripts/push_workout.py) — intervals.icu 课表写入
 - [sync.sh](scripts/sync.sh) — 资源库备份同步（自动备份功能的核心）
 

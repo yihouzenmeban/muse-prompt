@@ -1,6 +1,6 @@
 # 配套脚本
 
-两个 prompt 模板依赖的脚本，都已脱敏：个人数据换成环境变量或示例值，保留的是接口口径和踩过的坑。按下面顺序备齐，再把 prompt 里的 `{{数据脚本命令}}` 等占位符换成你的实际命令。
+三个 prompt 模板依赖的脚本，都已脱敏：个人数据换成环境变量或示例值，保留的是接口口径和踩过的坑。按下面顺序备齐，再把 prompt 里的 `{{数据脚本命令}}` 等占位符换成你的实际命令。
 
 ## 每晚训练播报
 
@@ -11,6 +11,13 @@
 | `render_brief.py` | 把播报 JSON 渲染成 HTML 卡片片段（含 HRV 散点图与睡眠阶段图） | 输入 JSON 的字段规范见文件头注释，与 `daily-training-brief.md` 里的规范一致 |
 | `export_brief.py` + `export_shot.js` | 把卡片截成夜间模式 PNG（600px 宽、3 倍图） | 依赖 node 与 Chromium（走 CDP 截图，`CHROME_BIN` 可改路径）、Python PIL |
 | `push_workout.py` | 把确认后的课表以 intervals.icu 原生文本格式写入日历（upsert 幂等） | 把 API key 放进 0600 文件（默认 `~/workspace/intervals-icu/.api_key`，可用环境变量改路径）；key 官方获取方式见 intervals.icu 设置页 |
+
+## 跑后点评
+
+| 脚本 | 作用 | 搭建要点 |
+| --- | --- | --- |
+| `render_review.py` | 把点评 JSON 渲染成 HTML 点评卡片段（时间线图 + 行内数字 + 心率区间条） | 输入 JSON 的字段规范见 `post-run-review.md` 的 Prompt 正文第 5 步；纵轴刻度取整规则在脚本里，勿改成数据 min-max 拉伸 |
+| `export_review.py` | 把点评卡截成夜间模式 PNG（投递兜底形态） | 与播报共用同目录的 `export_shot.js` 和同一套夜间主题（底色 #161615、600px 宽、3 倍图）；底部留白按顶部实测镜像裁切，不要改回固定尾巴 |
 
 ## Muse 资源库自动备份
 

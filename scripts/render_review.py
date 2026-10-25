@@ -134,8 +134,7 @@ def chart_svg(chart, distance_km=None, target_pace=None):
     if len(hr_vals) < 2 and len(pace_vals) < 2 and len(speed_vals) < 2:
         return ""
     W, H = 520, 126
-    L, R, T, B = 22, 26, 8, 16  # insets sized to the tick labels so they hug both content edges
-    x0, x1, y0, y1 = L, W - R, T, H - B
+    T, B = 8, 16  # top/bottom insets are fixed; left/right are sized below
     parts = [f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" style="display:block">']
 
     # Scales: HR snapped to 10 bpm steps, pace to 15 s steps, speed to
@@ -149,9 +148,30 @@ def chart_svg(chart, distance_km=None, target_pace=None):
         if target_pace:
             ps += [target_pace["lo"] * 60, target_pace["hi"] * 60]
         lo, hi, ticks = _nice_scale(min(ps), max(ps), 15, 0.3, 8)
+        # Pace can't go below zero: padding must not invent a negative
+        # tick (it used to render as a nonsense "0:-15" label).
+        lo = max(0, lo)
+        ticks = [t for t in ticks if t >= 0]
         pace_scale = (lo / 60, hi / 60, [t / 60 for t in ticks])
     elif speed_vals:
         speed_scale = _nice_scale(min(speed_vals), max(speed_vals), 5, 0.25, 2)
+
+    # Left/right insets sized to the actual tick labels, so long labels
+    # (e.g. a 16:22 pace tick when the watch kept recording after the
+    # finish) are never clipped at the card edge.
+    def _lbl_w(s):
+        return sum(5.5 if ch.isdigit() else 3.0 for ch in s)
+
+    hr_w = max([_lbl_w(f"{tv:g}") for tv in hr_scale[2]] or [0]) if hr_scale else 0
+    right_labels = []
+    if pace_scale:
+        right_labels = [fmt_pace(tv) for tv in pace_scale[2]]
+    elif speed_scale:
+        right_labels = [f"{tv:g}" for tv in speed_scale[2]]
+    r_w = max([_lbl_w(s) for s in right_labels] or [0])
+    L = int(hr_w + 6) if hr_scale else 22
+    R = int(r_w + 6) if right_labels else 26
+    x0, x1, y0, y1 = L, W - R, T, H - B
 
     # Gridlines + HR tick labels (left, red).
     if hr_scale:

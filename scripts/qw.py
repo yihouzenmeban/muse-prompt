@@ -10,8 +10,11 @@ that GETs https://<your-api-host>/v7/... with your key as the `key`
 query parameter and returns the parsed JSON.
 
 QWeather keys usually don't include the geo/city-lookup API, so known
-places are mapped to location IDs / lon,lat in PLACES below — edit the
-table to your own cities (IDs are QWeather's public city codes).
+places are mapped to location IDs / lon,lat in PLACES below. Keep your
+own cities OUT of this script: put them in a JSON object
+{name: location-id-or-"lon,lat"} at $QWEATHER_PLACES_FILE, or by default
+~/workspace/weather/places.local.json — entries there override the
+examples below, and that file is yours, never part of the template.
 
 Usage:
     python3 qw.py now 北京
@@ -29,13 +32,23 @@ _HELPER_DIR = os.environ.get(
 sys.path.insert(0, _HELPER_DIR)
 from qweather import fetch  # noqa: E402
 
-# Example places — replace with your own. Values are QWeather location
-# IDs, or "lon,lat" for places without an ID.
+# Example places. Values are QWeather location IDs, or "lon,lat" for
+# places without an ID.
 PLACES = {
     "北京": "101010100", "beijing": "101010100",
     "上海": "101020100", "shanghai": "101020100",
     "广州": "101280101", "guangzhou": "101280101",
 }
+
+# User places override (see docstring): silently ignored when absent.
+_PLACES_FILE = os.environ.get(
+    "QWEATHER_PLACES_FILE",
+    str(Path.home() / "workspace/weather/places.local.json"))
+try:
+    with open(_PLACES_FILE, encoding="utf-8") as _fh:
+        PLACES.update(json.load(_fh))
+except (OSError, ValueError):
+    pass
 
 
 def _call(path, location, extra=None):

@@ -4,8 +4,10 @@
 #
 # Setup: clone your (private!) backup repo to REPO_DIR below and set its
 # origin; put a push-capable SSH key at KEY below; then list every
-# credential file on your machine in the secrets section of EXCLUDES —
-# that list is the safety-critical part, take your time with it.
+# credential file on your machine in .excludes.local (one rsync pattern
+# per line, gitignored, never committed — see the loader below) — that
+# list is the safety-critical part, take your time with it. The script
+# aborts if that file is missing.
 #
 # Strategy: rsync $HOME into this repo (excluding secrets, regenerable
 # bloat, and runtime-managed dirs), then commit and push when anything
@@ -24,6 +26,11 @@ EXCLUDES=(
   --exclude=/workspace/muse-backup/
   # Keep this script at the repo root (documents the backup, not mirrored).
   --exclude=/sync.sh
+  # Repo-root files that live only in the repo (never mirrored): protect
+  # them from --delete, which would otherwise remove them because they
+  # are not in the source tree.
+  --exclude=/.gitignore
+  --exclude=/.excludes.local
   # --- secrets: never backed up ---
   --exclude=/.ssh/
   --exclude=/.config/ngrok/
@@ -57,6 +64,21 @@ EXCLUDES=(
   --exclude=/runtime.lock
   --exclude=/.postgres-ready
 )
+
+# Local secret excludes (single source, never committed): one rsync
+# --exclude pattern per line in $REPO_DIR/.excludes.local (gitignored).
+# Your own credential paths live in that file, not in this script.
+# Abort if it is missing — running without it could mirror credentials
+# into the repo.
+LOCAL_EXCLUDES="$REPO_DIR/.excludes.local"
+if [ ! -f "$LOCAL_EXCLUDES" ]; then
+  echo "backup: ABORT - $LOCAL_EXCLUDES missing; list your credential files there (one --exclude pattern per line)" >&2
+  exit 1
+fi
+while IFS= read -r _line || [ -n "$_line" ]; do
+  case "$_line" in ''|'#'*) continue ;; esac
+  EXCLUDES+=( "--exclude=$_line" )
+done < "$LOCAL_EXCLUDES"
 
 rsync -a --delete "${EXCLUDES[@]}" "$HOME/" "$REPO_DIR/"
 

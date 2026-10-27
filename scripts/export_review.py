@@ -49,7 +49,7 @@ body{margin:0;background:#11151b;font-family:"PingFang SC","Noto Sans CJK SC","S
 def main():
     (HERE / "export").mkdir(parents=True, exist_ok=True)
     frag = subprocess.run(
-        [sys.executable, str(HERE / "render.py"), str(JSON_PATH)],
+        [sys.executable, str(HERE / "render_review.py"), str(JSON_PATH)],
         capture_output=True, text=True, check=True).stdout
     WRAPPER.write_text(DARK_WRAPPER % frag)
     subprocess.run(

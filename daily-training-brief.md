@@ -6,16 +6,16 @@
 
 ## 效果示例
 
-下图是用虚构数据（[examples/brief-example.json](examples/brief-example.json)）经本仓库脚本渲染的播报图，版式与实际投递一致：
+示例是用虚构数据（[examples/brief-example.json](examples/brief-example.json)）经本仓库脚本渲染的播报 HTML 卡片片段，版式与实际投递一致：
 
-![每晚训练播报示例](examples/training-brief.png)
+[每晚训练播报示例卡片](examples/brief-example.html)
 
 ## 搭建前置
 
 1. **数据源脚本**：一个能只读拉取运动与健康数据的脚本（本模板以 Garmin 为例，需要活动、睡眠、静息心率、夜间 HRV、身体电量（Body Battery）、日间压力）。本仓库的 [scripts/pull.py](scripts/pull.py) 就是这样一个实现可直接用：它依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 项目的账号配置（Garmin Personal API key）与 garth 后端——Personal API 拉活动/健康数据，分圈与睡眠阶段时间线这两样 Personal API 没有的走 garth。换成其他数据源（COROS、Apple Health 等）时，只需替换这个脚本并改第 2 步的字段口径。
 2. **天气源**：任意能查逐日 + 逐小时预报的天气工具，本模板以和风天气（QWeather）为例；本仓库的 [scripts/qw.py](scripts/qw.py) 是现成实现（key 走 Muse 连接器/vault，脚本本身不见 key）。（作者另有一个用 open-meteo 给 Strava 活动补天气的开源项目 [update-strava-weather](https://github.com/yihouzenmeban/update-strava-weather)，天气获取与历史回填的思路可参考，但它用的不是和风接口。）
 3. **intervals.icu 账号**（可选）：API Key 用于把确认后的课表写入日历，写入脚本见 [scripts/push_workout.py](scripts/push_workout.py)；不用它就删掉第 6 步的写入提案部分。
-4. **渲染管线**（可选）：本模板让任务产出结构化 JSON、再由渲染脚本生成图片播报（夜间模式卡片）；本仓库的 [scripts/render_brief.py](scripts/render_brief.py) + [scripts/export_brief.py](scripts/export_brief.py) + [scripts/export_shot.js](scripts/export_shot.js) 是完整管线。不需要图片时，把第 5 步改成直接产出文字播报即可，JSON 字段规范可整段删除。出图还依赖中文字体：渲染脚本的字体栈首选苹方 SC / 微软雅黑，Linux 机器上默认没有，须另装中文字体（如 Noto Sans CJK SC），否则中文缺字或版式走样、图片与示例图不一致。
+4. **渲染管线**：本模板让任务产出结构化 JSON、再由渲染脚本生成 HTML 卡片片段；本仓库的 [scripts/render_brief.py](scripts/render_brief.py) 是渲染脚本，卡片用 widget 创建、present_now=false 只拿 token，投递方把 token 原样贴进投递消息即呈现，不出图、不发图片附件。把内容转成图片的需求不在本模板内，见 [html-to-image.md](html-to-image.md) 的独立脚本。渲染还依赖中文字体：渲染脚本的字体栈首选苹方 SC / 微软雅黑，Linux 机器上默认没有，须另装中文字体（如 Noto Sans CJK SC），否则中文缺字或版式走样、卡片与示例不一致。
 
 ## 占位符清单
 
@@ -38,7 +38,7 @@
 
 ## Prompt 正文（复制到定时任务，替换占位符后使用）
 
-每晚 19:00 的 {{赛事名称}} 备战训练播报。用户用中文沟通。播报以图片呈现（夜间模式、600px 原始宽、3 倍图 PNG），本任务负责算数据、写结构化 JSON、并在汇报里给出明日课表提案；图片渲染与写入确认按钮由主 agent 在投递时完成。
+每晚 19:00 的 {{赛事名称}} 备战训练播报。用户用中文沟通。播报以 HTML 卡片呈现，本任务负责算数据、写结构化 JSON、渲染 HTML 片段并建卡拿 token、并在汇报里给出明日课表提案；投递时主 agent 把 token 原样贴进投递消息立即呈现卡片，不出图；写入确认按钮仍由投递时附上。
 
 分工：单次训练的执行点评不在本播报内（可另设跑后点评任务）。播报重心：①今早恢复状态判断，②未来 3–5 天安排（含天气动态调换），③倒计时事项（领物、装备、行程）。今日训练只写完成事实（距离/配速/心率/负荷），不展开评价。
 
@@ -71,7 +71,7 @@
    - sleep_chart：{start/end: 入睡/起床时刻, segments: 睡眠阶段分段原样, hrv_readings: 整晚 HRV 逐点原样, hrv_avg: 昨晚平均 HRV（整数）, hr_readings: 整晚心率逐点原样, hr_avg: 整晚心率均值（整数）, legend: 各阶段总时长标签（深睡/浅睡/REM/清醒顺序，总时长为 0 的阶段省略）}。（版式参数——阶段配色、曲线粗细透明度等——由渲染脚本固定，此处给一组实测可用的参考值：深睡 #3971c1 / 浅睡 #69a3ed / REM #bc40b3 / 清醒 #d67ec8；心率线 #e53935；叠加曲线宽 0.8–0.9、不透明度 0.6–0.65；全图其余部分只用墨色灰阶 + 一个橙色强调色。双图版式：睡眠图在左、HRV 图在右，两图的文字描述都放在图下方、底部对齐，两格描述行数不同时用图与描述之间的弹性间隔补齐；结论句与页脚天气文字两端对齐。）
    - hrv：{label: "夜间 HRV · 昨晚"（必须标「昨晚」：value 是昨晚单夜值，标签写「近 7 晚」会与数值连读成 7 晚均值、有歧义）, value: 昨晚单夜值（字符串）, unit: "ms", values: 最近 7 晚单夜值正序数组, statuses: 对应 7 晚状态正序数组, band: [官方基线 balanced_low, balanced_high], low_upper: 官方基线 low 上限, dates: 对应 7 晚的 "M/D" 正序数组}。（点的形状按状态画：平衡=圆、不平衡=方、低=三角；颜色按数值与基准带关系：带内绿 #428947、带下橙 #d27034、低于 low 红 #b94038；纵轴按数据范围小留白取整到 10。描述区：标签与数值同字号、数值仅加粗不用大字号；渲染脚本在描述行下方另起一行小字「近 7 晚 min–max · 基准带 lo–hi」，由 values/band 派生。）
    - weather：一行，以「天气：」开头，写明未来几天跑步窗口的降水结论与是否调换日期。
-6. 本任务不创建选项按钮、不渲染图片。最终汇报必须包含三件事：①brief-latest.json 已写入；②明日拟写入 intervals.icu 的课表提案：标题（体现核心内容，如「恢复跑 8km + 6×20s 加速跑（总8km）」；标题不写心率）、日期、开始时间（默认你的 {{习惯窗口}}）、intervals.icu 原生课表文本全文、心率上限（如有，写在提案说明里）；③若有天气调换或恢复异常，一句话注明。主 agent 投递时把 JSON 渲染成图片发出，再附「确定写入 / 改一下」按钮，**用户确认后才写入**（用幂等 external_id 防重复）。课表文本语法按 intervals.icu 官方 workout builder 文档：重复组写成「组名 Nx」标题行 + 其下步骤行、组后另起一个标题行收尾，切勿把 Nx 内联进步骤行（如 `- 6x 20s …, 40s Recovery` 会被解析成单个 20 秒步、恢复段被丢弃）；写入后回读事件的解析结果（workout_doc）核对步骤与重复结构无误再交付。绝对禁止未确认先写入。
+6. 本任务不创建选项按钮。写完 JSON 后，立即用 render_brief.py 渲染 HTML 片段，用 widget.create_html_widget 创建卡片，present_now=false，不要直接呈现，把返回的 embed_token 原样写进最终汇报，并明确这是本次投递要立即贴出的卡片，不是留待以后用的。不得出图、不得发图片附件。最终汇报必须包含四件事：①brief-latest.json 已写入；②HTML 卡片 embed_token 原样；③明日拟写入 intervals.icu 的课表提案：标题（体现核心内容，如「恢复跑 8km + 6×20s 加速跑（总8km）」；标题不写心率）、日期、开始时间（默认你的 {{习惯窗口}}）、intervals.icu 原生课表文本全文、心率上限（如有，写在提案说明里）；④若有天气调换或恢复异常，一句话注明。主 agent 投递时把汇报里的 embed_token 原样贴进投递消息呈现 HTML 卡片，再附「确定写入 / 改一下」按钮，**用户确认后才写入**（用幂等 external_id 防重复）。课表文本语法按 intervals.icu 官方 workout builder 文档：重复组写成「组名 Nx」标题行 + 其下步骤行、组后另起一个标题行收尾，切勿把 Nx 内联进步骤行（如 `- 6x 20s …, 40s Recovery` 会被解析成单个 20 秒步、恢复段被丢弃）；写入后回读事件的解析结果（workout_doc）核对步骤与重复结构无误再交付。绝对禁止未确认先写入。
 
 安全与口径：
 - 减量期宁可少跑不要多跑；建议保持渐进、保守。
@@ -93,11 +93,11 @@
 ---
 ## 投递接线（主 agent 侧，不复制进定时任务正文）
 
-定时任务正文只负责算数据、写 JSON、汇报提案；图片渲染与按钮投递由主 agent 在收到任务汇报后做，步骤如下：
+定时任务正文负责算数据、写 JSON、渲染建卡拿 token、汇报提案；卡片贴出与按钮投递由主 agent 在收到任务汇报后做，步骤如下：
 
-1. 取任务汇报里的三件事：①brief-latest.json 已写入（路径在 {{工作区路径}}）；②明日拟写入 intervals.icu 的课表提案全文（标题、日期、开始时间、课表文本）；③天气调换或恢复异常的注明。
-2. 用 [scripts/export_brief.py](scripts/export_brief.py) 把 JSON 渲成夜间模式 PNG（用法：`export_brief.py {{工作区路径}}brief-latest.json <附件目录>/brief-YYYY-MM-DD-dark.png`）。投递形态固定为这张图片：不用 HTML 卡片组件（后台回合会被平台拒绝），不退回纯文字播报。
-3. 图片连同课表提案一起发出，并附「确定写入 / 改一下」两个选项。用户确认前不写入 intervals.icu。
+1. 取任务汇报里的四件事：①brief-latest.json 已写入（路径在 {{工作区路径}}）；②HTML 卡片 embed_token 原样；③明日拟写入 intervals.icu 的课表提案全文（标题、日期、开始时间、课表文本）；④天气调换或恢复异常的注明。
+2. 把汇报里的 embed_token 原样贴进投递消息，立即呈现 HTML 卡片。投递形态固定为这张卡片：不出图、不发图片附件，不退回纯文字播报。token 是本次投递专用的，不要留待以后用，也不要复用旧 token。
+3. 卡片连同课表提案一起发出，并附「确定写入 / 改一下」两个选项。用户确认前不写入 intervals.icu。
 4. 用户点「确定写入」：用 [scripts/push_workout.py](scripts/push_workout.py) 把提案写入（幂等 external_id 防重复），写入后回读事件的解析结果核对步骤与重复结构无误再交付。
 5. 用户点「改一下」：先问改哪里，改后重新提案、重新确认，确认前同样不写入。
-6. 渲染失败时如实报告错误，不改发文字版播报。
+6. 建卡或贴卡失败时如实报告错误，不改发图片版、也不改发文字版播报。

@@ -8,16 +8,21 @@
 | --- | --- | --- |
 | `pull.py` | 只读拉取 Garmin 活动与健康数据，输出 JSON（睡眠时间线、整晚 HRV/心率、官方基准带、训练负荷等） | 先克隆 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 并在它的 `config.local.json` 里配好 Garmin 账号与 Personal API key；脚本头部注释列了环境变量（项目路径、账号 id、时区） |
 | `qw.py` | 和风天气查询（实况/逐日/逐小时），输出紧凑 JSON | key 不经过脚本：默认从 Muse 的 custom.qweather 连接器 helper 读 vault 里的 key；不用连接器时按脚本头部说明换成自己的调用。自己的城市放 `places.local.json` 覆盖文件（不改脚本），格式见脚本头部说明 |
-| `render_brief.py` | 把播报 JSON 渲染成 HTML 卡片片段（含 HRV 散点图与睡眠阶段图） | 输入 JSON 的字段规范见文件头注释，与 `daily-training-brief.md` 里的规范一致 |
-| `export_brief.py` + `export_shot.js` | 把卡片截成夜间模式 PNG（600px 宽、3 倍图） | 依赖 node 与 Chromium（走 CDP 截图，`CHROME_BIN` 可改路径）、Python PIL |
+| `render_brief.py` | 把播报 JSON 渲染成 HTML 卡片片段（含 HRV 散点图与睡眠阶段图） | 输入 JSON 的字段规范见文件头注释，与 `daily-training-brief.md` 里的规范一致；卡片用 widget 创建、present_now=false 只拿 token，投递方贴 token 呈现，不出图 |
 | `push_workout.py` | 把确认后的课表以 intervals.icu 原生文本格式写入日历（upsert 幂等） | 把 API key 放进 0600 文件（默认 `~/workspace/intervals-icu/.api_key`，可用环境变量改路径）；key 官方获取方式见 intervals.icu 设置页 |
 
 ## 跑后点评
 
 | 脚本 | 作用 | 搭建要点 |
 | --- | --- | --- |
-| `render_review.py` | 把点评 JSON 渲染成 HTML 点评卡片段（时间线图 + 行内数字 + 心率区间条） | 输入 JSON 的字段规范见 `post-run-review.md` 的 Prompt 正文第 5 步；纵轴刻度取整规则在脚本里，勿改成数据 min-max 拉伸 |
-| `export_review.py` | 把点评卡截成夜间模式 PNG（投递兜底形态） | 与播报共用同目录的 `export_shot.js` 和同一套夜间主题（底色 #161615、600px 宽、3 倍图）；底部留白按顶部实测镜像裁切，不要改回固定尾巴 |
+| `render_review.py` | 把点评 JSON 渲染成 HTML 点评卡片段（时间线图 + 行内数字 + 心率区间条） | 输入 JSON 的字段规范见 `post-run-review.md` 的 Prompt 正文第 5 步；纵轴刻度取整规则在脚本里，勿改成数据 min-max 拉伸；卡片用 widget 创建、present_now=false 只拿 token，片段大时改用文件建卡，投递方贴 token 呈现，不出图 |
+
+## 指定内容转图片（独立，不属于播报和点评）
+
+| 脚本 | 作用 | 搭建要点 |
+| --- | --- | --- |
+| `html_to_image.py` | 把一段指定内容（HTML 片段、完整 HTML、纯文字）转成 PNG（默认 600px 宽、3 倍图、深色主题） | 只在用户明确指名要图片时用；底层截图用同目录的 `export_shot.js`（Chromium CDP，`CHROME_BIN` 可改路径），依赖 node 与 Python PIL；不要把这个脚本套回播报和点评的默认流程 |
+| `export_shot.js` | Chromium CDP 截图工具，供 `html_to_image.py` 调用 | 不是独立投递脚本，不要直接拿它去截播报或点评卡 |
 
 ## Zepp 体重同步到 Garmin
 

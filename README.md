@@ -44,8 +44,9 @@
 
 - [pull.py](scripts/pull.py) — Garmin 活动与健康数据拉取（依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 的账号配置与 garth 后端）
 - [qw.py](scripts/qw.py) — 和风天气查询
-- [render_brief.py](scripts/render_brief.py) + [export_brief.py](scripts/export_brief.py) + [export_shot.js](scripts/export_shot.js) — 播报 JSON 渲染成图片
-- [render_review.py](scripts/render_review.py) + [export_review.py](scripts/export_review.py) — 点评 JSON 渲染成点评卡 / 夜间模式图片（与播报共用 export_shot.js）
+- [render_brief.py](scripts/render_brief.py) — 播报 JSON 渲染成 HTML 卡片片段（建卡拿 token、投递方贴 token 呈现，不出图）
+- [render_review.py](scripts/render_review.py) — 点评 JSON 渲染成 HTML 点评卡片段（建卡拿 token、投递方贴 token 呈现，不出图）
+- [html_to_image.py](scripts/html_to_image.py) + [export_shot.js](scripts/export_shot.js) — 指定内容转图片（独立脚本，只在用户明确指名要图片时用，不属于播报和点评）
 - [sync_weight.py](scripts/sync_weight.py) + [zepp_login.py](scripts/zepp_login.py) — Zepp 体重 → Garmin 同步与 Zepp 登录续期
 - [push_workout.py](scripts/push_workout.py) — intervals.icu 课表写入
 - [sync.sh](scripts/sync.sh) — 资源库备份同步（自动备份功能的核心）

@@ -7,7 +7,7 @@
 | 脚本 | 作用 | 搭建要点 |
 | --- | --- | --- |
 | `pull.py` | 只读拉取 Garmin 活动与健康数据，输出 JSON（睡眠时间线、整晚 HRV/心率、官方基准带、训练负荷等） | 先克隆 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 并在它的 `config.local.json` 里配好 Garmin 账号与 Personal API key；脚本头部注释列了环境变量（项目路径、账号 id、时区） |
-| `qw.py` | 和风天气查询（实况/逐日/逐小时），输出紧凑 JSON | key 不经过脚本：默认从 Muse 的 custom.qweather 连接器 helper 读 vault 里的 key；不用连接器时按脚本头部说明换成自己的调用。`PLACES` 地点表换成你自己的城市 |
+| `qw.py` | 和风天气查询（实况/逐日/逐小时），输出紧凑 JSON | key 不经过脚本：默认从 Muse 的 custom.qweather 连接器 helper 读 vault 里的 key；不用连接器时按脚本头部说明换成自己的调用。自己的城市放 `places.local.json` 覆盖文件（不改脚本），格式见脚本头部说明 |
 | `render_brief.py` | 把播报 JSON 渲染成 HTML 卡片片段（含 HRV 散点图与睡眠阶段图） | 输入 JSON 的字段规范见文件头注释，与 `daily-training-brief.md` 里的规范一致 |
 | `export_brief.py` + `export_shot.js` | 把卡片截成夜间模式 PNG（600px 宽、3 倍图） | 依赖 node 与 Chromium（走 CDP 截图，`CHROME_BIN` 可改路径）、Python PIL |
 | `push_workout.py` | 把确认后的课表以 intervals.icu 原生文本格式写入日历（upsert 幂等） | 把 API key 放进 0600 文件（默认 `~/workspace/intervals-icu/.api_key`，可用环境变量改路径）；key 官方获取方式见 intervals.icu 设置页 |
@@ -30,6 +30,6 @@
 
 | 脚本 | 作用 | 搭建要点 |
 | --- | --- | --- |
-| `sync.sh` | rsync 家目录到备份仓库工作区 → 密钥特征扫描 → commit + push | 先把你的私有备份仓库 clone 到脚本里的 `REPO_DIR` 并配好 origin、把 `KEY` 改成你的 SSH key 路径；**最关键的一步**：把你机器上所有凭据文件逐个加进脚本里的 secrets 排除清单 |
+| `sync.sh` | rsync 家目录到备份仓库工作区 → 密钥特征扫描 → commit + push | 先把你的私有备份仓库 clone 到脚本里的 `REPO_DIR` 并配好 origin、把 `KEY` 改成你的 SSH key 路径；**最关键的一步**：把你机器上所有凭据文件逐个写进 `.excludes.local`（gitignore，脚本缺失它就 abort），不要写进脚本本身 |
 
 各功能的失败处理都遵循同一套约定：技术性失败静默重试（最多 3 次），需要人工介入的（验证码、权限、key 失效）立即通知——细则在各 prompt 文件末尾。

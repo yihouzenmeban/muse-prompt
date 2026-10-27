@@ -15,7 +15,7 @@
 1. **数据源脚本**：一个能只读拉取运动与健康数据的脚本（本模板以 Garmin 为例，需要活动、睡眠、静息心率、夜间 HRV、身体电量（Body Battery）、日间压力）。本仓库的 [scripts/pull.py](scripts/pull.py) 就是这样一个实现可直接用：它依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 项目的账号配置（Garmin Personal API key）与 garth 后端——Personal API 拉活动/健康数据，分圈与睡眠阶段时间线这两样 Personal API 没有的走 garth。换成其他数据源（COROS、Apple Health 等）时，只需替换这个脚本并改第 2 步的字段口径。
 2. **天气源**：任意能查逐日 + 逐小时预报的天气工具，本模板以和风天气（QWeather）为例；本仓库的 [scripts/qw.py](scripts/qw.py) 是现成实现（key 走 Muse 连接器/vault，脚本本身不见 key）。（作者另有一个用 open-meteo 给 Strava 活动补天气的开源项目 [update-strava-weather](https://github.com/yihouzenmeban/update-strava-weather)，天气获取与历史回填的思路可参考，但它用的不是和风接口。）
 3. **intervals.icu 账号**（可选）：API Key 用于把确认后的课表写入日历，写入脚本见 [scripts/push_workout.py](scripts/push_workout.py)；不用它就删掉第 6 步的写入提案部分。
-4. **渲染管线**（可选）：本模板让任务产出结构化 JSON、再由渲染脚本生成图片播报（夜间模式卡片）；本仓库的 [scripts/render_brief.py](scripts/render_brief.py) + [scripts/export_brief.py](scripts/export_brief.py) + [scripts/export_shot.js](scripts/export_shot.js) 是完整管线。不需要图片时，把第 5 步改成直接产出文字播报即可，JSON 字段规范可整段删除。
+4. **渲染管线**（可选）：本模板让任务产出结构化 JSON、再由渲染脚本生成图片播报（夜间模式卡片）；本仓库的 [scripts/render_brief.py](scripts/render_brief.py) + [scripts/export_brief.py](scripts/export_brief.py) + [scripts/export_shot.js](scripts/export_shot.js) 是完整管线。不需要图片时，把第 5 步改成直接产出文字播报即可，JSON 字段规范可整段删除。出图还依赖中文字体：渲染脚本的字体栈首选苹方 SC / 微软雅黑，Linux 机器上默认没有，须另装中文字体（如 Noto Sans CJK SC），否则中文缺字或版式走样、图片与示例图不一致。
 
 ## 占位符清单
 
@@ -89,3 +89,15 @@
 - 本轮若执行失败，先按正文已有的恢复手段处理（如重查一次）。
 - 仍失败时：需要用户人工介入的（验证码/MFA/权限不足/配置错误等）→ 立即向用户报告，不进入队列。
 - 可重试的技术性失败（网络超时、API 限流、服务抖动、脚本异常退出等）→ 如实上报错误详情（退出码/关键错误行），保持静默，不直接打扰用户；由主 agent 按失败队列协议统一处理（每 15 分钟重试，最多 3 次，3 次仍失败才通知用户）。
+
+---
+## 投递接线（主 agent 侧，不复制进定时任务正文）
+
+定时任务正文只负责算数据、写 JSON、汇报提案；图片渲染与按钮投递由主 agent 在收到任务汇报后做，步骤如下：
+
+1. 取任务汇报里的三件事：①brief-latest.json 已写入（路径在 {{工作区路径}}）；②明日拟写入 intervals.icu 的课表提案全文（标题、日期、开始时间、课表文本）；③天气调换或恢复异常的注明。
+2. 用 [scripts/export_brief.py](scripts/export_brief.py) 把 JSON 渲成夜间模式 PNG（用法：`export_brief.py {{工作区路径}}brief-latest.json <附件目录>/brief-YYYY-MM-DD-dark.png`）。投递形态固定为这张图片：不用 HTML 卡片组件（后台回合会被平台拒绝），不退回纯文字播报。
+3. 图片连同课表提案一起发出，并附「确定写入 / 改一下」两个选项。用户确认前不写入 intervals.icu。
+4. 用户点「确定写入」：用 [scripts/push_workout.py](scripts/push_workout.py) 把提案写入（幂等 external_id 防重复），写入后回读事件的解析结果核对步骤与重复结构无误再交付。
+5. 用户点「改一下」：先问改哪里，改后重新提案、重新确认，确认前同样不写入。
+6. 渲染失败时如实报告错误，不改发文字版播报。

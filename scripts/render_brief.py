@@ -284,16 +284,19 @@ def render(d):
     p.append("</div>")
     p.append("</div>")
     # charts side by side, equal height: HRV trend + last night's sleep stages
-    h, sc = d["hrv"], d["sleep_chart"]
-    p.append('<hr class="tb-rule"><div class="tb-grid">')
-    p.append(f'<div>{sleep_svg(sc)}'
-             f'<div class="tb-times"><span>{sc["start"]}</span><span>{sc["end"]}</span></div>'
-             f'<div class="cell-fill"></div><div class="cell-desc">{sleep_legend(sc)}</div></div>')
-    p.append(f'<div>{hrv_svg(h)}'
-             f'<div class="tb-times"><span>{h["dates"][0]}</span><span>{h["dates"][-1]}</span></div>'
-             f'<div class="cell-fill"></div><div class="cell-desc"><div class="tb-ch"><span class="lb">{h["label"]}</span><span class="val">{h["value"]} <small>{h["unit"]}</small></span></div>'
-             f'<div class="hrv-sub">近 7 晚 {min(h["values"])}–{max(h["values"])} · 基准带 {h["band"][0]}–{h["band"][1]}</div></div></div>')
-    p.append("</div>")
+    # (skipped whole when either side is missing: a night without sleep
+    # data must not kill the whole card)
+    if d.get("hrv") and d.get("sleep_chart"):
+        h, sc = d["hrv"], d["sleep_chart"]
+        p.append('<hr class="tb-rule"><div class="tb-grid">')
+        p.append(f'<div>{sleep_svg(sc)}'
+                 f'<div class="tb-times"><span>{sc["start"]}</span><span>{sc["end"]}</span></div>'
+                 f'<div class="cell-fill"></div><div class="cell-desc">{sleep_legend(sc)}</div></div>')
+        p.append(f'<div>{hrv_svg(h)}'
+                 f'<div class="tb-times"><span>{h["dates"][0]}</span><span>{h["dates"][-1]}</span></div>'
+                 f'<div class="cell-fill"></div><div class="cell-desc"><div class="tb-ch"><span class="lb">{h["label"]}</span><span class="val">{h["value"]} <small>{h["unit"]}</small></span></div>'
+                 f'<div class="hrv-sub">近 7 晚 {min(h["values"])}–{max(h["values"])} · 基准带 {h["band"][0]}–{h["band"][1]}</div></div></div>')
+        p.append("</div>")
     if d.get("weather"):
         p.append(f'<hr class="tb-rule"><div class="tb-foot">{d["weather"]}</div>')
     p.append("</div>")

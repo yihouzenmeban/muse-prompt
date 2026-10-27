@@ -6,9 +6,11 @@
 
 ### [daily-training-brief.md](daily-training-brief.md) — 每晚训练播报
 
-每晚自动拉取运动与健康数据（睡眠、静息心率、夜间 HRV、Body Battery、压力），结合多日天气预报、跑步习惯与备赛计划动态判断，产出结构化 JSON 渲染成图片播报；次日课表只在用户确认后才写入 intervals.icu。文件内含搭建前置（数据源、天气源、渲染管线）和完整占位符清单。
+每晚自动拉取运动与健康数据（睡眠、静息心率、夜间 HRV、Body Battery、压力），结合多日天气预报、跑步习惯与备赛计划动态判断，产出结构化 JSON 渲染成 HTML 卡片播报；次日课表只在用户确认后才写入 intervals.icu。文件内含搭建前置（数据源、天气源、渲染管线）和完整占位符清单。
 
 <img src="examples/training-brief.png" width="480" alt="每晚训练播报示例（虚构数据）">
+
+*示例图仅用于展示效果，由 html_to_image.py 从示例 HTML 生成；实际投递是 HTML 卡片，不是截图。*
 
 ### [muse-backup.md](muse-backup.md) — Muse 资源库自动备份
 
@@ -16,9 +18,11 @@
 
 ### [post-run-review.md](post-run-review.md) — 跑后点评
 
-事件驱动（不是定时任务）：活动平台 webhook 入队信号 → 60 秒轻量检测唤醒点评 worker → 对照课表与心率区写结构化点评 JSON → 渲染成图主导的点评卡投递。文件内含信号链设计、点评口径与文案禁令、点评 JSON 字段规范，以及卡片版式与投递兜底规范（后台投递发不出 HTML 卡片时改发共用管线的夜间图片版，绝不退回纯文字）。
+事件驱动（不是定时任务）：活动平台 webhook 入队信号 → 60 秒轻量检测唤醒点评 worker → 对照课表与心率区写结构化点评 JSON → 渲染成图主导的点评卡投递。文件内含信号链设计、点评口径与文案禁令、点评 JSON 字段规范，以及卡片版式与投递规范（worker 建卡拿 token、投递方贴 token 呈现，绝不退回纯文字）。
 
 <img src="examples/review-card.png" width="480" alt="跑后点评卡示例（虚构数据）">
+
+*示例图仅用于展示效果，由 html_to_image.py 从示例 HTML 生成；实际投递是 HTML 卡片，不是截图。*
 
 ### [zepp-weight-sync.md](zepp-weight-sync.md) — Zepp 体重同步到 Garmin
 

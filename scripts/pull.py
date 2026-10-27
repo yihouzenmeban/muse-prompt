@@ -385,13 +385,30 @@ def _speed_to_pace(speed):
     return round(1000 / speed / 60, 2) if speed else None
 
 
-def get_activity_stream(personal, activity_id, points=160):
+def get_activity_stream(personal, activity_id, points=None, elapsed_s=None):
     """Time-series stream via the Personal details endpoint (chart data).
 
     Returns downsampled hr / pace / elevation series for rendering a
     mini timeline chart. Pace is derived from speed and lightly smoothed
     (5-point moving average, None-aware). Failure-tolerant: None.
+
+    Sampling is duration-adaptive (2026-10-27 fix for the old fixed
+    maxChartSize=160, which made longer activities sparser and could not
+    resolve 20 s strides): target one point per second, i.e. the watch's
+    native 1 Hz rate. The request is ceil(elapsed)+1, NOT exactly the
+    duration: the server returns full native data only when requested >=
+    native count, and requesting exactly the duration decimates
+    (verified 2026-10-27: 2852 -> 1437 rows, 2853 -> 2853). The +1 covers
+    the inclusive endpoints (records = span+1 for a clean 1 Hz run) and
+    elapsed (not timer duration) covers pauses/gaps. Callers that pass
+    points explicitly keep the old behavior.
     """
+    if points is None:
+        if elapsed_s:
+            import math
+            points = math.ceil(elapsed_s) + 1
+        else:
+            points = 160
     try:
         det = personal.get_json(
             f"activity-service/activity/{activity_id}/details",
@@ -496,7 +513,9 @@ def get_activity_detail(personal, activity_id):
                                        if s.get("groundContactTime") else None),
             "steps": s.get("steps"),
         }
-    stream = get_activity_stream(personal, activity_id)
+    stream = get_activity_stream(personal, activity_id,
+                                 elapsed_s=(s.get("elapsedDuration")
+                                            or s.get("duration")))
     if stream:
         detail["stream"] = stream
     try:

@@ -15,7 +15,7 @@
 
 | 脚本 | 作用 | 搭建要点 |
 | --- | --- | --- |
-| `render_review.py` | 把点评 JSON 渲染成 HTML 点评卡片段（时间线图 + 行内数字 + 心率区间条） | 输入 JSON 的字段规范见 `post-run-review.md` 的 Prompt 正文第 5 步；纵轴刻度取整规则在脚本里，勿改成数据 min-max 拉伸；卡片用 widget 创建、present_now=false 只拿 token，片段大时改用文件建卡，投递方贴 token 呈现，不出图 |
+| `render_review.py` | 把点评 JSON 渲染成 HTML 点评卡片段（时间线图 + 行内数字 + 心率区间条） | 输入 JSON 的字段规范见 `post-run-review.md` 的 Prompt 正文第 5 步；纵轴刻度取整规则在脚本里，勿改成数据 min-max 拉伸；worker 只渲染片段到文件、不建卡（hook 上下文建不了卡），token 由主 agent 在非 hook 回合里用片段文件创建（present_now=false，片段大时改用文件建卡）、贴 token 呈现，不出图 |
 
 ## 指定内容转图片（独立，不属于播报和点评）
 

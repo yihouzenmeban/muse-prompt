@@ -18,7 +18,7 @@
 
 ### [post-run-review.md](post-run-review.md) — 跑后点评
 
-事件驱动（不是定时任务）：活动平台 webhook 入队信号 → 60 秒轻量检测唤醒点评 worker → 对照课表与心率区写结构化点评 JSON → 渲染成图主导的点评卡投递。文件内含信号链设计、点评口径与文案禁令、点评 JSON 字段规范，以及卡片版式与投递规范（worker 建卡拿 token、投递方贴 token 呈现，绝不退回纯文字）。
+事件驱动（不是定时任务）：活动平台 webhook 入队信号 → 60 秒轻量检测唤醒点评 worker → 对照课表与心率区写结构化点评 JSON → 渲染成图主导的点评卡投递。文件内含信号链设计、点评口径与文案禁令、点评 JSON 字段规范，以及卡片版式与投递规范（worker 只渲染片段、主 agent 在非 hook 回合里建卡拿 token 并贴 token 呈现，绝不退回纯文字）。
 
 <img src="examples/review-card.png" width="480" alt="跑后点评卡示例（虚构数据）">
 
@@ -49,7 +49,7 @@
 - [pull.py](scripts/pull.py) — Garmin 活动与健康数据拉取（依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 的账号配置与 garth 后端）
 - [qw.py](scripts/qw.py) — 和风天气查询
 - [render_brief.py](scripts/render_brief.py) — 播报 JSON 渲染成 HTML 卡片片段（建卡拿 token、投递方贴 token 呈现，不出图）
-- [render_review.py](scripts/render_review.py) — 点评 JSON 渲染成 HTML 点评卡片段（建卡拿 token、投递方贴 token 呈现，不出图）
+- [render_review.py](scripts/render_review.py) — 点评 JSON 渲染成 HTML 点评卡片段（worker 只渲染、不建卡；主 agent 在非 hook 回合里建卡拿 token 并贴 token 呈现，不出图）
 - [html_to_image.py](scripts/html_to_image.py) + [export_shot.js](scripts/export_shot.js) — 指定内容转图片（独立脚本，只在用户明确指名要图片时用，不属于播报和点评）
 - [sync_weight.py](scripts/sync_weight.py) + [zepp_login.py](scripts/zepp_login.py) — Zepp 体重 → Garmin 同步与 Zepp 登录续期
 - [push_workout.py](scripts/push_workout.py) — intervals.icu 课表写入

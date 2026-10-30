@@ -123,6 +123,33 @@ def _path_for(series, x0, x1, y0, y1, lo, hi, invert=False):
     return "M" + " L".join(f"{x},{y}" for x, y in pts), pts
 
 
+# Widget HTML has a 1 MB hard limit, and each plotted point costs roughly
+# 35 bytes across the three chart series (measured 2026-10-30: a 21,146-point
+# race fragment was 749,693 bytes). A 100K race at 1 point/s is ~55,000
+# points, which would render to ~1.95 MB and be rejected at token creation.
+# The plot box is only 520 px wide, so anything above a few thousand points
+# is already many points per pixel column: cap the plotted series, and
+# only then. Small runs (below the cap) render byte-for-byte as before.
+MAX_CHART_POINTS = 20000
+
+
+def _downsample_for_plot(series, cap=MAX_CHART_POINTS):
+    """Strided downsampling for chart paths only; axes still use full data.
+
+    Keeps the first and last points so the curve still spans the full
+    distance. A stride of 3 (the 100K case) means one plotted point per
+    ~3 seconds, still far denser than the 520 px plot width can show.
+    """
+    n = len(series)
+    if n <= cap:
+        return series
+    stride = (n + cap - 1) // cap
+    out = list(series[::stride])
+    if (n - 1) % stride != 0:
+        out.append(series[-1])
+    return out
+
+
 def chart_svg(chart, distance_km=None, target_pace=None):
     hr = chart.get("hr") or []
     pace = chart.get("pace") or chart.get("pace_min_km") or []
@@ -216,22 +243,27 @@ def chart_svg(chart, distance_km=None, target_pace=None):
             parts.append(f'<line x1="{x0}" y1="{y_top:.0f}" x2="{x1}" y2="{y_top:.0f}" stroke="var(--hatch-widget-accent)" stroke-width="1.2" stroke-dasharray="5 4"/>')
             parts.append(f'<text x="{x0 + 4}" y="{y_top - 3:.0f}" font-size="9.5" fill="var(--hatch-widget-muted)">{esc(label)}</text>')
 
-    epath, epts = _path_for(elev, x0, x1, y0, y1,
+    # Plot only the downsampled series; scales above already used full data.
+    elev_p = _downsample_for_plot(elev)
+    pace_p = _downsample_for_plot(pace)
+    speed_p = _downsample_for_plot(speed)
+    hr_p = _downsample_for_plot(hr)
+    epath, epts = _path_for(elev_p, x0, x1, y0, y1,
                             min([v for v in elev if v is not None], default=0),
                             max([v for v in elev if v is not None], default=1))
     if epath:
         area = epath + f" L{epts[-1][0]},{y1} L{epts[0][0]},{y1} Z"
         parts.append(f'<path d="{area}" fill="var(--hatch-widget-text)" fill-opacity="0.07" stroke="none"/>')
     if pace_scale:
-        ppath, _ = _path_for(pace, x0, x1, y0, y1, pace_scale[0], pace_scale[1], invert=True)
+        ppath, _ = _path_for(pace_p, x0, x1, y0, y1, pace_scale[0], pace_scale[1], invert=True)
         if ppath:
             parts.append(f'<path d="{ppath}" fill="none" stroke="var(--hatch-widget-text)" stroke-width="1.6" stroke-linejoin="round"/>')
     if speed_scale:
-        spath, _ = _path_for(speed, x0, x1, y0, y1, speed_scale[0], speed_scale[1])
+        spath, _ = _path_for(speed_p, x0, x1, y0, y1, speed_scale[0], speed_scale[1])
         if spath:
             parts.append(f'<path d="{spath}" fill="none" stroke="var(--hatch-widget-text)" stroke-width="1.6" stroke-linejoin="round"/>')
     if hr_scale:
-        hpath, _ = _path_for(hr, x0, x1, y0, y1, hr_scale[0], hr_scale[1])
+        hpath, _ = _path_for(hr_p, x0, x1, y0, y1, hr_scale[0], hr_scale[1])
         if hpath:
             parts.append(f'<path d="{hpath}" fill="none" stroke="{HR_COLOR}" stroke-width="1.6" stroke-linejoin="round"/>')
     # X endpoints: 0 and total distance.

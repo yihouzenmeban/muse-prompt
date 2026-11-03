@@ -4,7 +4,7 @@
 Zepp 侧：
   apptoken 请求头认证 -> band_data 发现数字 uid ->
   GET https://api-mifit.zepp.com/users/{uid}/members/-1/weightRecords
-  apptoken 失效时用 .zepp_credentials 自动重新登录换取（zepp_login.py，
+  apptoken 失效时用统一凭证文件里的 zepp 凭证自动重新登录换取（zepp_login.py，
   逆向自 user.huami.com/privacy 登录页 JS）。
 
 Garmin 侧写入格式参考 cyberjunky/python-garminconnect 的 add_weigh_in：
@@ -41,7 +41,6 @@ LOCAL_TZ = ZoneInfo(os.environ.get("TZ_NAME", "Asia/Shanghai"))
 ZEPP_API_BASE = "https://api-mifit.huami.com"
 ZEPP_WEIGHT_API = "https://api-mifit.zepp.com"
 
-APPT_TOKEN_FILE = os.path.join(PROJECT_ROOT, ".apptoken")
 STATE_FILE = os.path.join(PROJECT_ROOT, "state.json")
 # 全量同步：不限制回填天数。每天只取 Zepp 当天最新的一条记录；
 # Garmin 当天已有任何体重记录则跳过不写。
@@ -85,17 +84,22 @@ def zepp_validate(s):
 def zepp_get_session():
     """返回可用的 (session, uid)。
 
-    优先用已保存的 apptoken；无效或缺失时用 .zepp_credentials
-    自动重新登录换取并保存。uid 缓存于 state.json，避免每次
+    优先用统一凭证文件里的 apptoken；无效或缺失时用统一凭证文件里的
+    zepp 凭证自动重新登录换取并保存。uid 缓存于 state.json，避免每次
     因 band_data 为空而重复登录。
     """
     sys.path.insert(0, PROJECT_ROOT)
     import zepp_login
 
+    sys.path.insert(0, os.environ.get(
+        "MUSE_CREDENTIALS_LIB", "/home/hatch/workspace/lib"))
+    from muse_credentials import get_section
+
     state = load_state()
-    apptoken = ""
-    if os.path.exists(APPT_TOKEN_FILE):
-        apptoken = open(APPT_TOKEN_FILE, encoding="utf-8").read().strip()
+    try:
+        apptoken = get_section("zepp").get("apptoken", "")
+    except ValueError:
+        apptoken = ""
     uid = ""
     if apptoken:
         s = zepp_session(apptoken)
@@ -113,7 +117,7 @@ def zepp_get_session():
     else:
         log("无已保存的 apptoken，登录换取")
 
-    apptoken, uid = zepp_login.refresh_and_save(APPT_TOKEN_FILE)
+    apptoken, uid = zepp_login.refresh_and_save()
     state["zepp_uid"] = uid
     save_state(state)
     log(f"Zepp 登录成功，已保存新的 apptoken（uid {uid}）")

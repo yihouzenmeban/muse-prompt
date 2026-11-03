@@ -11,7 +11,7 @@
 3. **同步脚本**（如 `~/workspace/muse-backup/sync.sh`）：本仓库的 [scripts/sync.sh](scripts/sync.sh) 是可直接改用的实现——把仓库地址、key 路径和排除清单换成你的即可。它必须做到：
    - 用 rsync 把家目录同步到备份仓库的本地工作区（工作区即仓库克隆，镜像家目录结构）。
    - **排除三类，缺一不可**：
-     - 密钥类：SSH 私钥目录、各类凭据/ token 文件（如 ngrok 配置、各项目的 config.local.json 与 token 文件、API key 文件、所有 `.env`）。把你机器上所有含密钥的文件逐个列进排除名单——漏一个就是泄密。
+     - 密钥类：SSH 私钥目录、各类凭据/ token 文件（如 ngrok 配置、各项目的 config.local.json 与 token 文件、API key 文件、所有 `.env`）。把你机器上所有含密钥的文件逐个列进排除名单——漏一个就是泄密。排除名单本身放 gitignored 的本地文件（如 `.excludes.local`），脚本读不到它就中止，绝不能在无排除的情况下跑；再加裸文件名兜底（如 `.strava_tokens.json`、`config.local.json`、`.api_key`、`.apptoken`、`.zepp_credentials`、`strava_config*.sh`）——任意层级出现同名文件一律排除，防止旧副本、复制件漏网；本工作区的统一凭证文件（如 `~/.config/muse/credentials.json`）同样列入密钥类。
      - 可再生的臃肿物：`.venv/`、`__pycache__/`、`node_modules/`、`.git/`。
      - 运行时管理的目录：由平台托管、会自行重建的目录（agents/、assets/、bin/、docs/、hooks/、subscriptions/、data/、.cache/、.local/、.pki/ 等，按你的环境增减）。
    - commit 前跑一遍**密钥特征扫描**（如私钥头、常见 token 前缀），命中即中止并报错，绝不提交。

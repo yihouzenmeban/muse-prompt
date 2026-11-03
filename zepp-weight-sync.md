@@ -8,7 +8,7 @@
 
 1. **同步脚本**：本仓库的 [scripts/sync_weight.py](scripts/sync_weight.py) + [scripts/zepp_login.py](scripts/zepp_login.py)。前者是主流程（拉 Zepp 记录 → 逐日去重 → 写 Garmin），后者是 Zepp 登录链（apptoken 失效时用保存的账号密码自动重新登录换取，登录方式逆向自华米网页登录流程）。
 2. **Garmin 认证复用**：脚本不自己维护 Garmin 登录，而是复用 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 项目的账号配置与加密 garth token（与 Garmin→COROS 同步同一套 token 刷新机制）。先按那个仓库把账号配好，本脚本用环境变量 `GARMIN_PROJECT`（项目路径）、`GARMIN_ACCOUNT_ID`（用哪个账号，默认 account_a）指过去。
-3. **Zepp 凭证**：脚本目录放一个 0600 权限的 `.zepp_credentials` 文件，两行 `ZEPP_USERNAME=` / `ZEPP_PASSWORD=`（手机号要带国家区号前缀，如 +86，否则登录 401）。apptoken 缓存在同目录 `.apptoken`（0600），同步进度在 `state.json`。这几个文件都要加进你的备份排除清单和 .gitignore——凭证只留本地。
+3. **Zepp 凭证**：凭证放统一凭证文件 `~/.config/muse/credentials.json` 的 zepp 段（0600）：credentials 两行 `ZEPP_USERNAME=` / `ZEPP_PASSWORD=`（手机号要带国家区号前缀，如 +86，否则登录 401）；apptoken 由登录链自动写回同一段；同步进度在 `state.json`。统一凭证文件和 `state.json` 都要加进你的备份排除清单和 .gitignore——凭证只留本地。
 4. **调度**：每天一次即可（体重一天最多几条），时间选在晨称之后，如每天 10:00。
 
 ## 占位符清单

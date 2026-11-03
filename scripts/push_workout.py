@@ -5,9 +5,11 @@ Uses intervals.icu's native workout text format in the event `description`,
 posted to POST /api/v1/athlete/0/events/bulk?upsert=true.
 
 Auth: HTTP Basic, username "API_KEY", password = your intervals.icu
-API key, read from a 0600 file (default ~/workspace/intervals-icu/.api_key,
-override with the INTERVALS_KEY_FILE env var; create and chmod it
-yourself, and never print or log the key).
+API key, read from the unified credentials file
+~/.config/muse/credentials.json (intervals-icu section, via
+~/workspace/lib/muse_credentials.py); for template use, override with
+the INTERVALS_KEY_FILE env var pointing at a 0600 file.
+Never print or log the key.
 
 Transport: curl via subprocess, not Python urllib. Reason (verified
 2026-10-15 by interleaved A/B tests): through this VM's egress proxy,
@@ -33,9 +35,6 @@ import sys
 import tempfile
 import time
 
-KEY_FILE = os.environ.get(
-    "INTERVALS_KEY_FILE",
-    os.path.expanduser("~/workspace/intervals-icu/.api_key"))
 API_BASE = "https://intervals.icu/api/v1"
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
@@ -43,22 +42,34 @@ CODE_MARKER = "__CURL_CODE__:"
 
 
 def load_key():
-    try:
-        st = os.stat(KEY_FILE)
-    except FileNotFoundError:
-        sys.exit("error: key file not found: " + KEY_FILE)
-    if st.st_mode & 0o077:
-        print(
-            "warning: %s permissions are %s, expected 0600"
-            % (KEY_FILE, oct(st.st_mode & 0o777)),
-            file=sys.stderr,
-        )
-    with open(KEY_FILE) as f:
-        key = f.read().strip()
+    key_file = os.environ.get("INTERVALS_KEY_FILE")
+    if key_file:
+        # 模板兜底：显式指定文件时仍走文件。
+        try:
+            st = os.stat(key_file)
+        except FileNotFoundError:
+            sys.exit("error: key file not found: " + key_file)
+        if st.st_mode & 0o077:
+            print(
+                "warning: %s permissions are %s, expected 0600"
+                % (key_file, oct(st.st_mode & 0o777)),
+                file=sys.stderr,
+            )
+        with open(key_file) as f:
+            key = f.read().strip()
+    else:
+        sys.path.insert(0, os.environ.get(
+            "MUSE_CREDENTIALS_LIB", "/home/hatch/workspace/lib"))
+        from muse_credentials import get_section
+        try:
+            key = get_section("intervals-icu").get("api_key", "")
+        except ValueError:
+            key = ""
     if not key:
         sys.exit(
-            "error: API key file is empty — paste your intervals.icu API key "
-            "(intervals.icu settings page, bottom) into " + KEY_FILE
+            "error: intervals.icu API key not found — set it in the "
+            "unified credentials file (intervals-icu section) or point "
+            "INTERVALS_KEY_FILE at a 0600 key file"
         )
     return key
 

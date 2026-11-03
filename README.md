@@ -6,7 +6,7 @@
 
 ### [daily-training-brief.md](daily-training-brief.md) — 每晚训练播报
 
-每晚自动拉取运动与健康数据（睡眠、静息心率、夜间 HRV、Body Battery、压力），结合多日天气预报、跑步习惯与备赛计划动态判断，产出结构化 JSON 渲染成 HTML 卡片播报；次日课表只在用户确认后才写入 intervals.icu。文件内含搭建前置（数据源、天气源、渲染管线）和完整占位符清单。
+每晚自动拉取运动与健康数据（睡眠、静息心率、夜间 HRV、身体电量、压力），结合多日天气预报、跑步习惯与备赛计划动态判断，产出结构化 JSON 渲染成 HTML 卡片播报；次日课表只在用户确认后才写入 intervals.icu。文件内含搭建前置（数据源、天气源、渲染管线）和完整占位符清单。
 
 <img src="examples/training-brief.png" width="480" alt="每晚训练播报示例（虚构数据）">
 

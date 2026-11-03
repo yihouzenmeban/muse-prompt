@@ -8,29 +8,25 @@
   字段：country_code, password, name, client_id=HuaMi,
         redirect_uri, state=REDIRECTION, token=access, json_response=true
 
-凭证从 .zepp_credentials（0600）读取，绝不打印。
+凭证从统一凭证文件 ~/.config/muse/credentials.json（zepp 段）读取，绝不打印。
 """
 
 import json
 import os
 import sys
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-CRED_FILE = os.path.join(PROJECT_ROOT, ".zepp_credentials")
-APPT_FILE = os.path.join(PROJECT_ROOT, ".apptoken")
+sys.path.insert(0, os.environ.get(
+    "MUSE_CREDENTIALS_LIB", "/home/hatch/workspace/lib"))
+from muse_credentials import get_section, set_values
 
 LOGIN_BASE = "https://api-user.huami.com/"
 
 
-def load_credentials(path=CRED_FILE):
-    creds = {}
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            k, v = line.split("=", 1)
-            creds[k.strip()] = v.strip()
+def load_credentials():
+    try:
+        creds = get_section("zepp").get("credentials", {})
+    except ValueError:
+        creds = {}
     username = creds.get("ZEPP_USERNAME", "")
     password = creds.get("ZEPP_PASSWORD", "")
     if not username or not password:
@@ -174,14 +170,10 @@ def get_apptoken():
     raise RuntimeError(f"Zepp 登录失败：{last_err}")
 
 
-def refresh_and_save(path=APPT_FILE):
-    """重新登录并保存 apptoken，返回 (apptoken, uid)。"""
+def refresh_and_save():
+    """重新登录并保存 apptoken 到统一凭证文件，返回 (apptoken, uid)。"""
     app_token, uid = get_apptoken()
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        f.write(app_token)
-    os.replace(tmp, path)
-    os.chmod(path, 0o600)
+    set_values("zepp", {"apptoken": app_token})
     return app_token, uid
 
 

@@ -12,7 +12,7 @@
 
 ## 搭建前置
 
-1. **数据源脚本**：一个能只读拉取运动与健康数据的脚本（本模板以 Garmin 为例，需要活动、睡眠、静息心率、夜间 HRV、身体电量（Body Battery）、日间压力）。本仓库的 [scripts/pull.py](scripts/pull.py) 就是这样一个实现可直接用：它依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 项目的账号配置（Garmin Personal API key）与 garth 后端——Personal API 拉活动/健康数据，分圈与睡眠阶段时间线这两样 Personal API 没有的走 garth。换成其他数据源（COROS、Apple Health 等）时，只需替换这个脚本并改第 2 步的字段口径。
+1. **数据源脚本**：一个能只读拉取运动与健康数据的脚本（本模板以 Garmin 为例，需要活动、睡眠、静息心率、夜间 HRV、身体电量、日间压力）。本仓库的 [scripts/pull.py](scripts/pull.py) 就是这样一个实现可直接用：它依赖 [garmin2coros](https://github.com/yihouzenmeban/garmin2coros) 项目的账号配置（Garmin Personal API key）与 garth 后端——Personal API 拉活动/健康数据，分圈与睡眠阶段时间线这两样 Personal API 没有的走 garth。换成其他数据源（COROS、Apple Health 等）时，只需替换这个脚本并改第 2 步的字段口径。
 2. **天气源**：任意能查逐日 + 逐小时预报的天气工具，本模板以和风天气（QWeather）为例；本仓库的 [scripts/qw.py](scripts/qw.py) 是现成实现（key 走 Muse 连接器/vault，脚本本身不见 key）。（作者另有一个用 open-meteo 给 Strava 活动补天气的开源项目 [update-strava-weather](https://github.com/yihouzenmeban/update-strava-weather)，天气获取与历史回填的思路可参考，但它用的不是和风接口。）
 3. **intervals.icu 账号**（可选）：API Key 用于把确认后的课表写入日历，写入脚本见 [scripts/push_workout.py](scripts/push_workout.py)；不用它就删掉第 6 步的写入提案部分。
 4. **渲染管线**：本模板让任务产出结构化 JSON、再由渲染脚本生成 HTML 卡片片段；本仓库的 [scripts/render_brief.py](scripts/render_brief.py) 是渲染脚本，卡片用 widget 创建、present_now=false 只拿 token，投递方把 token 原样贴进投递消息即呈现，不出图、不发图片附件。把内容转成图片的需求不在本模板内，见 [html-to-image.md](html-to-image.md) 的独立脚本。渲染还依赖中文字体：渲染脚本的字体栈首选苹方 SC / 微软雅黑，Linux 机器上默认没有，须另装中文字体（如 Noto Sans CJK SC），否则中文缺字或版式走样、卡片与示例不一致。

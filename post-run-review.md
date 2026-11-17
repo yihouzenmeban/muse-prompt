@@ -22,7 +22,7 @@
      ```
    - **唤醒**：一个每 60 秒跑一次的轻量检测（Muse 的 hook 机制即可）：队列为空就静默；队列非空且内容哈希与上次唤醒不同才唤醒点评 worker；同一哈希 900 秒内不重复唤醒（防 worker 卡住时反复拉起）。检测只读文件、毫秒级返回，不是让 agent 每分钟轮询。
    - **消费**：worker 处理完自己删队列里已读的行、把已点评的活动 id 记进状态文件；处理期间新入队的信号保留。
-   接收器实现不在本仓库：在开源项目 [update-strava-weather](https://github.com/yihouzenmeban/update-strava-weather) 的 webhook/ 目录（receiver.py、ensure.sh、systemd units），按那边的说明部署，并配一个看门狗任务保活（服务掉线自愈的安排见 [strava-weather-sync.md](strava-weather-sync.md)）。
+   接收器实现不在本仓库：在开源项目 [update-strava-weather](https://github.com/yihouzenmeban/update-strava-weather) 的 webhook/ 目录（receiver.py、ensure.sh、systemd units），按那边的说明部署，并配保活检查（服务掉线自愈的安排见 [strava-weather-sync.md](strava-weather-sync.md)）。
    前置条件：活动平台必须能向你的公网地址推送事件（Strava 是 activity/create 订阅 + ngrok 这类隧道）。没有这类推送能力的平台，事件驱动这条链搭不出来，改手动触发（跑完手动往队列追加一行信号）或定时触发，效果不再是“跑完自动出卡”。
 2. **数据源脚本**：同播报模板，一个能只读拉活动详情（分圈、课表步骤与目标、训练执行分数、训练负荷、训练效果、身体电量影响、逐点心率/配速/海拔序列、跑步动态）与今早健康数据（睡眠分、HRV 与状态及其基准带上下限、晨起身体电量与本次活动消耗、静息心率与 7 日均值）的脚本，本仓库的 [scripts/pull.py](scripts/pull.py) 是现成实现。
 3. **计划对照（可选）**：点评要对照课表判断执行偏差，计划来源可以是课表平台 API（如 intervals.icu 当天 events）或手表活动里实际挂的课表（数据脚本的 detail.workout）。对照失败不阻断点评，用手表实际课表兜底。

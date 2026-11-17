@@ -34,7 +34,7 @@
 
 ### [strava-weather-sync.md](strava-weather-sync.md) — Strava 活动天气与山峰标注
 
-标注引擎在开源仓库 [update-strava-weather](https://github.com/yihouzenmeban/update-strava-weather)，本模板沉淀运行安排：webhook 通用钩子契约（钩子只发信号、拿不到活动 ID，干活端按状态自己对）、Strava 配额纪律（200/15 分钟、2,000/天，每次调用都计数、本地记账）、天气源为什么必须能查历史小时，以及 VM 重启后靠看门狗任务自愈的保活 prompt。
+标注引擎在开源仓库 [update-strava-weather](https://github.com/yihouzenmeban/update-strava-weather)，本模板沉淀运行安排：webhook 通用钩子契约（钩子只发信号、拿不到活动 ID，干活端按状态自己对）、Strava 配额纪律（200/15 分钟、2,000/天，每次调用都计数、本地记账）、天气源为什么必须能查历史小时，以及 VM 重启后靠启动目标加保活检查自愈的保活 prompt。
 
 ## 使用方式
 
